@@ -1,0 +1,868 @@
+"""
+PlantCare AI - Agronomic Knowledge Base & Product Seeder
+Populates crops, verified disease profiles, and agricultural supplements.
+"""
+
+import json
+import logging
+from sqlalchemy.orm import Session
+from .models import Crop, Disease, Product, disease_product_association
+from .connection import SessionLocal, init_db
+
+logger = logging.getLogger("plantcare.database.seed")
+
+CROPS_SEED_DATA = [
+    {"id": "tomato", "name": "Tomato", "scientific_name": "Solanum lycopersicum", "family": "Solanaceae", "description": "Widely cultivated warm-season nightshade crop prone to foliage blights and viral pathogens.", "icon_name": "Tomato"},
+    {"id": "potato", "name": "Potato", "scientific_name": "Solanum tuberosum", "family": "Solanaceae", "description": "Crucial tuber crop susceptible to late blight (Phytophthora infestans) and early blight.", "icon_name": "Potato"},
+    {"id": "corn", "name": "Corn (Maize)", "scientific_name": "Zea mays", "family": "Poaceae", "description": "Major cereal grain vulnerable to foliar fungal leaf blights and rusts.", "icon_name": "Corn"},
+    {"id": "apple", "name": "Apple", "scientific_name": "Malus domestica", "family": "Rosaceae", "description": "Deciduous tree fruit susceptible to fungal scab, cedar rust, and black rot.", "icon_name": "Apple"},
+    {"id": "grape", "name": "Grape", "scientific_name": "Vitis vinifera", "family": "Vitaceae", "description": "Perennial woody vine cultivated for wine and table grapes, sensitive to black rot and Esca.", "icon_name": "Grape"},
+    {"id": "pepper", "name": "Bell Pepper", "scientific_name": "Capsicum annuum", "family": "Solanaceae", "description": "Warm-climate vegetable frequently challenged by bacterial spot and viral complexes.", "icon_name": "Pepper"},
+    {"id": "cherry", "name": "Cherry", "scientific_name": "Prunus avium", "family": "Rosaceae", "description": "Stone fruit sensitive to powdery mildew and fungal shothole diseases.", "icon_name": "Cherry"},
+    {"id": "strawberry", "name": "Strawberry", "scientific_name": "Fragaria × ananassa", "family": "Rosaceae", "description": "Low-growing perennial berry crop prone to leaf scorch and angular leaf spots.", "icon_name": "Strawberry"},
+    {"id": "peach", "name": "Peach", "scientific_name": "Prunus persica", "family": "Rosaceae", "description": "Prone to bacterial leaf spot and peach leaf curl fungal infection.", "icon_name": "Peach"},
+    {"id": "orange", "name": "Orange", "scientific_name": "Citrus sinensis", "family": "Rutaceae", "description": "Citrus tree vulnerable to destructive Huanglongbing (Citrus Greening) bacteria.", "icon_name": "Orange"},
+]
+
+DISEASES_SEED_DATA = [
+    {
+        "id": "Tomato___Early_blight",
+        "disease_name": "Tomato Early Blight",
+        "scientific_name": "Alternaria solani",
+        "crop_id": "tomato",
+        "category": "Fungal",
+        "severity": "Moderate",
+        "is_healthy": False,
+        "description": "Tomato Early Blight is a common fungal disease that attacks tomato foliage, stems, and fruit. It typically starts on older, lower leaves as brown-to-black spots with characteristic target-like concentric rings.",
+        "symptoms": json.dumps([
+            "Dark brown to black circular lesions on older lower foliage",
+            "Characteristic concentric rings resembling a target board",
+            "Yellow chlorotic halos surrounding dark necrotic lesions",
+            "Premature defoliation starting from the base of the plant upwards",
+            "Sunscald damage on fruits exposed due to foliage loss"
+        ]),
+        "causes": "Pathogen Alternaria solani surviving in plant debris, solanaceous weeds, and infected seeds.",
+        "transmission": "Spreads via rain splash, overhead irrigation, windblown fungal conidia, and contaminated pruning tools.",
+        "environmental_conditions": "Warm temperatures (24°C to 29°C / 75°F to 84°F) coupled with heavy dew, prolonged leaf wetness, or intermittent rains.",
+        "treatment": "Prune and dispose of infected bottom leaves immediately. Apply registered preventive or curative fungicides based on copper or mancozeb. Ensure proper soil moisture without wetting leaves.",
+        "prevention": "Implement a 3-year crop rotation avoiding other nightshades. Space plants 24-36 inches apart for adequate air circulation. Apply organic straw mulch to prevent soil spores from splashing onto lower leaves.",
+        "organic_treatment": "Copper octanoate (copper soap) sprays, Bacillus subtilis biological foliar drench, or potassium bicarbonate solutions applied every 7-10 days.",
+        "chemical_treatment": "Chlorothalonil, Mancozeb 75% WP, or Azoxystrobin applied according to label instructions upon early detection.",
+        "recommended_supplements": "Calcium Nitrate foliar spray to strengthen leaf cell walls against enzymatic penetration; Silica supplements.",
+        "recommended_fertilizers": "Balanced NPK 10-10-10 or 5-10-10. Avoid excessive high-nitrogen fertilizers that create soft, vulnerable leaf tissue.",
+        "active_ingredients": "Copper hydroxide, Mancozeb, Chlorothalonil, Bacillus amyloliquefaciens strain D747",
+        "precautions": "Do not compost infected tomato debris in home compost piles. Wear personal protective equipment (PPE) when applying copper or synthetic sprays.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Water at the base using drip or soaker hoses",
+                "Apply clean mulch around the base of each plant",
+                "Sanitize pruning shears with 70% isopropyl alcohol between plants",
+                "Stake or cage plants to keep foliage elevated off the damp soil"
+            ],
+            "donts": [
+                "Do not use overhead sprinkler irrigation in late afternoon",
+                "Do not handle or prune wet tomato foliage",
+                "Do not leave diseased crop residues on the field over winter",
+                "Do not plant tomatoes in soil previously grown with potatoes or eggplants in the same year"
+            ]
+        }),
+        "image_url": "/images/diseases/tomato_early_blight.jpg",
+        "references": "University Extension IPM Guidelines; USDA Plant Pathology Compendium.",
+        "product_ids": ["prod-copper-fungicide-50", "prod-bacillus-biofungicide", "prod-mancozeb-75wp", "prod-calcium-nitrate-foliar"]
+    },
+    {
+        "id": "Tomato___Late_blight",
+        "disease_name": "Tomato Late Blight",
+        "scientific_name": "Phytophthora infestans",
+        "crop_id": "tomato",
+        "category": "Oomycete / Water Mold",
+        "severity": "Critical",
+        "is_healthy": False,
+        "description": "Late Blight is an aggressive, destructive water-mold pathogen capable of completely destroying entire fields within a week under damp, cool conditions. Responsible historically for the Irish Potato Famine.",
+        "symptoms": json.dumps([
+            "Large, irregular, water-soaked lesions that rapidly turn dark purplish-brown",
+            "Delicate white fuzzy fungal-like sporulation on the undersides of leaves during high humidity",
+            "Stem lesions that become dark, brittle, and cause sudden collapse of branches",
+            "Firm, greasy, golden-brown rot patches on green and ripe fruit"
+        ]),
+        "causes": "Phytophthora infestans oomycete surviving in infected cull piles, potato tubers, or volunteer plants.",
+        "transmission": "Microscopic sporangia travel miles on damp winds, fog, and splashing precipitation.",
+        "environmental_conditions": "Cool, humid weather: 15°C to 21°C (60°F to 70°F) with relative humidity exceeding 90% and persistent leaf wetness.",
+        "treatment": "Emergency action required. Immediately remove and destroy heavily infected plants in sealed plastic bags. Apply systemic targeted oomycete fungicides on unaffected surrounding plants.",
+        "prevention": "Destroy cull piles and volunteer potatoes near tomato beds. Choose certified disease-resistant hybrids. Avoid overhead irrigation.",
+        "organic_treatment": "Fixed copper fungicides applied strictly as preventative barrier sprays prior to infection events. Once established, organic eradicants have limited efficacy.",
+        "chemical_treatment": "Metalaxyl-M, Cymoxanil + Mancozeb, or Dimethomorph applied at strict preventative thresholds.",
+        "recommended_supplements": "Phosphite / Potassium Phosphonate systemic induced resistance boosters.",
+        "recommended_fertilizers": "Phosphorus and Potassium enriched formulations to support root vitality; minimize lush vegetative nitrogen.",
+        "active_ingredients": "Cymoxanil, Dimethomorph, Copper Oxychloride, Metalaxyl",
+        "precautions": "Late blight is a community pathogen: alert neighboring farms when confirmed to trigger regional disease monitoring.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Bag diseased plants directly on-site before moving them to stop airborne spore release",
+                "Monitor regional late blight forecasting models",
+                "Ensure maximal air movement through wide plant spacing"
+            ],
+            "donts": [
+                "Never leave infected vines on the ground or in unsealed compost",
+                "Do not save seeds from infected fruit",
+                "Do not delay spraying once weather conditions become persistently cool and foggy"
+            ]
+        }),
+        "image_url": "/images/diseases/tomato_late_blight.jpg",
+        "references": "CABI Invasive Species Compendium; Cornell Vegetable MD Online.",
+        "product_ids": ["prod-cymoxanil-mancozeb", "prod-copper-fungicide-50", "prod-potassium-phosphite"]
+    },
+    {
+        "id": "Tomato___Leaf_Mold",
+        "disease_name": "Tomato Leaf Mold",
+        "scientific_name": "Passalora fulva (syn. Cladosporium fulvum)",
+        "crop_id": "tomato",
+        "category": "Fungal",
+        "severity": "Moderate",
+        "is_healthy": False,
+        "description": "Leaf mold primarily affects greenhouse, high-tunnel, and sheltered field tomatoes where relative humidity is persistently elevated.",
+        "symptoms": json.dumps([
+            "Pale greenish-yellow chlorotic spots with diffuse margins on upper leaf surfaces",
+            "Olive-green to velvety brown mold growth on corresponding undersides of leaves",
+            "Leaves curl, turn brown, wither, and drop prematurely"
+        ]),
+        "causes": "Passalora fulva fungus persisting as conidia on seeds or greenhouse structural surfaces.",
+        "transmission": "Conidia are readily dispersed by air currents, workers' clothing, and splashing water.",
+        "environmental_conditions": "High relative humidity (greater than 85%) and moderate temperatures between 21°C and 24°C.",
+        "treatment": "Increase greenhouse ventilation, introduce horizontal airflow fans, lower plant density, and apply targeted protective fungicides.",
+        "prevention": "Maintain relative humidity below 85% with heating and venting cycles. Plant resistant cultivars with Cf resistance genes.",
+        "organic_treatment": "Copper-based fungicides, Neem oil, or bio-fungicides with Bacillus amyloliquefaciens.",
+        "chemical_treatment": "Chlorothalonil or Difenoconazole sprays applied with thorough coverage of leaf undersides.",
+        "recommended_supplements": "Soluble Potassium and Silica foliar sprays.",
+        "recommended_fertilizers": "Standard balanced nutritional regime; ensure adequate potassium to maintain stomatal regulation.",
+        "active_ingredients": "Chlorothalonil, Copper Hydroxide, Difenoconazole",
+        "precautions": "Ensure complete spray coverage of lower leaf surfaces where velvety mold colonies thrive.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Increase ventilation and airflow in greenhouse tunnels",
+                "Prune lower suckers to open the plant canopy"
+            ],
+            "donts": [
+                "Do not allow condensation to form on greenhouse ceiling that drips onto leaves",
+                "Do not crowd plants together"
+            ]
+        }),
+        "image_url": "/images/diseases/tomato_early_blight.jpg",
+        "references": "Greenhouse Tomato IPM Guide; Penn State Extension.",
+        "product_ids": ["prod-chlorothalonil-720", "prod-neem-oil-organic", "prod-bacillus-biofungicide"]
+    },
+    {
+        "id": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+        "disease_name": "Tomato Yellow Leaf Curl Virus (TYLCV)",
+        "scientific_name": "Begomovirus (TYLCV)",
+        "crop_id": "tomato",
+        "category": "Viral",
+        "severity": "Severe",
+        "is_healthy": False,
+        "description": "A devastating plant virus causing severe stunting, erect cupped leaves with chlorotic yellow margins, and dramatic reduction in fruit set.",
+        "symptoms": json.dumps([
+            "Pronounced upward curling and cupping of leaflet margins",
+            "Interveinal yellowing (chlorosis) especially in young emerging leaves",
+            "Severe plant stunting with compact bush-like appearance",
+            "Abortion of flowers leading to drastically decreased yield"
+        ]),
+        "causes": "Tomato yellow leaf curl virus transmitted by the silverleaf whitefly (Bemisia tabaci).",
+        "transmission": "Not seed-transmitted; purely transmitted persistently by whiteflies as they feed on phloem sap.",
+        "environmental_conditions": "Warm, sunny, dry climates encouraging dense whitefly population booms.",
+        "treatment": "Viruses cannot be cured once inside the plant. Remove and rogue out infected plants promptly to prevent them serving as virus reservoirs.",
+        "prevention": "Control whitefly vectors using yellow sticky traps, insecticidal soaps, or reflective silver mulches. Grow TYLCV-resistant hybrids.",
+        "organic_treatment": "Insecticidal soap, cold-pressed Neem oil (Azadirachtin), and horticultural oil sprays to suppress whitefly nymphs.",
+        "chemical_treatment": "Systemic neonicotinoids or Diamide insecticides (e.g., Cyantraniliprole) targeted specifically at whitefly populations.",
+        "recommended_supplements": "Seaweed kelp extract and micronutrient cocktails to alleviate abiotic stress in neighboring healthy plants.",
+        "recommended_fertilizers": "Moderate balanced feeding; avoid excessive nitrogen that attracts sap-feeding whitefly swarms.",
+        "active_ingredients": "Azadirachtin, Potassium salts of fatty acids, Imidacloprid, Cyantraniliprole",
+        "precautions": "Immediately bag rogue plants prior to pulling so whiteflies do not scatter onto adjacent crops.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Install 50-mesh insect netting on greenhouse vents",
+                "Deploy yellow sticky traps for early whitefly detection",
+                "Plant TYLCV-resistant seed varieties"
+            ],
+            "donts": [
+                "Do not attempt to spray fungicides (they have zero effect against viruses)",
+                "Do not leave infected plants standing in the field"
+            ]
+        }),
+        "image_url": "/images/diseases/tomato_late_blight.jpg",
+        "references": "University of Florida IFAS Extension; World Vegetable Center.",
+        "product_ids": ["prod-neem-oil-organic", "prod-insecticidal-soap", "prod-seaweed-kelp-extract"]
+    },
+    {
+        "id": "Tomato___healthy",
+        "disease_name": "Healthy Tomato Plant",
+        "scientific_name": "Solanum lycopersicum",
+        "crop_id": "tomato",
+        "category": "Healthy",
+        "severity": "None",
+        "is_healthy": True,
+        "description": "Vibrant, deep green foliage free from necrotic lesions, bacterial speckling, or viral chlorosis. Optimal vegetative and reproductive development.",
+        "symptoms": json.dumps([
+            "Uniform rich green color across all upper and lower foliage",
+            "Turgid, well-developed leaves without cupping or necrotic spotting",
+            "Robust stem growth and strong apical dominance",
+            "Healthy yellow blossom development and normal fruit formation"
+        ]),
+        "causes": "Optimal cultural management, fertile soil, and absence of active pathogenic pressures.",
+        "transmission": "N/A - Plant is in good health.",
+        "environmental_conditions": "Consistent sunlight (6-8 hours daily), balanced irrigation, well-draining soil pH 6.0-6.8.",
+        "treatment": "No disease treatment needed. Maintain proactive scouting and preventive cultural care.",
+        "prevention": "Continue standard preventive practices: bottom drip watering, staking, mulching, and bi-weekly scouting.",
+        "organic_treatment": "Routine preventive application of compost tea or beneficial mycorrhizal root drenches.",
+        "chemical_treatment": "No chemical treatment needed.",
+        "recommended_supplements": "Organic compost, Mycorrhizal bio-inoculants, and balanced micronutrients (Iron, Magnesium, Boron).",
+        "recommended_fertilizers": "Slow-release balanced NPK 10-10-10 or organic 4-6-8 tomato formulation during fruit swell.",
+        "active_ingredients": "Beneficial microbes, Humic acids, Macro and Micronutrients",
+        "precautions": "Avoid over-fertilizing with nitrogen to prevent blossom end rot and excessive vegetative growth.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Maintain uniform soil moisture to prevent blossom end rot",
+                "Keep leaves dry when watering",
+                "Ensure steady calcium availability during fruit set"
+            ],
+            "donts": [
+                "Do not apply pesticide sprays when plants are healthy",
+                "Do not allow soil to dry out completely between waterings"
+            ]
+        }),
+        "image_url": "/images/diseases/tomato_early_blight.jpg",
+        "references": "Standard Agronomic Extension Best Management Practices.",
+        "product_ids": ["prod-organic-compost-tea", "prod-calcium-nitrate-foliar", "prod-balanced-npk-101010"]
+    },
+    {
+        "id": "Potato___Early_blight",
+        "disease_name": "Potato Early Blight",
+        "scientific_name": "Alternaria solani",
+        "crop_id": "potato",
+        "category": "Fungal",
+        "severity": "Moderate",
+        "is_healthy": False,
+        "description": "Fungal foliar disease causing dark brown concentric rings on potato leaves, leading to defoliation and compromised tuber sizing.",
+        "symptoms": json.dumps([
+            "Small dark brown to black spots with concentric rings (target pattern)",
+            "Yellowing tissue bordering the spots",
+            "Premature senescence of the foliage",
+            "Dark, sunken circular lesions with raised margins on potato tubers"
+        ]),
+        "causes": "Alternaria solani overwintering on plant residues and potato culls.",
+        "transmission": "Airborne spores and rain splash.",
+        "environmental_conditions": "Warm temperatures (24°C-30°C) with alternating wet and dry periods.",
+        "treatment": "Apply protective foliar fungicides when plants begin to close their rows.",
+        "prevention": "Rotate crops with non-solanaceous species for at least 3 years. Ensure optimal plant vigor through balanced nitrogen nutrition.",
+        "organic_treatment": "Copper hydroxide formulations, Trichoderma harzianum soil and foliar drenches.",
+        "chemical_treatment": "Mancozeb, Chlorothalonil, or Boscalid fungicides applied according to forecasting models.",
+        "recommended_supplements": "Potassium foliar feed to bolster plant vigor during tuber bulking.",
+        "recommended_fertilizers": "Balanced N-P-K. Adequate nitrogen prevents premature vine susceptibility.",
+        "active_ingredients": "Mancozeb, Chlorothalonil, Azoxystrobin",
+        "precautions": "Ensure tubers are mature and skins well-set before harvesting to prevent tuber infection.",
+        "do_and_dont": json.dumps({
+            "dos": ["Maintain balanced crop fertility", "Destroy infected vine residues"],
+            "donts": ["Do not harvest immature tubers in wet soil"]
+        }),
+        "image_url": "/images/diseases/potato_early_blight.jpg",
+        "references": "Potato IPM Field Handbook.",
+        "product_ids": ["prod-mancozeb-75wp", "prod-copper-fungicide-50", "prod-chlorothalonil-720"]
+    },
+    {
+        "id": "Potato___Late_blight",
+        "disease_name": "Potato Late Blight",
+        "scientific_name": "Phytophthora infestans",
+        "crop_id": "potato",
+        "category": "Oomycete / Water Mold",
+        "severity": "Critical",
+        "is_healthy": False,
+        "description": "Devastating water mold causing rapid blighting of potato leaves, rotting of haulms, and reddish-brown dry rot of tubers in storage.",
+        "symptoms": json.dumps([
+            "Irregular pale green to dark water-soaked leaf spots turning purplish-brown",
+            "White velvety fungal sporulation on lower leaf surface around lesion margins",
+            "Rapid total collapse of potato canopies in wet weather",
+            "Copper-brown dry granular rot extending into tuber flesh"
+        ]),
+        "causes": "Phytophthora infestans surviving in infected seed tubers and volunteer potatoes.",
+        "transmission": "Airborne sporangia carried on damp winds; motile zoospores wash into soil.",
+        "environmental_conditions": "Temperatures 10°C-20°C with persistent free moisture, heavy dew, or rain.",
+        "treatment": "Apply translaminar or systemic oomyceticides at immediate notice. Desiccate or kill vines 2-3 weeks before harvest if blight is active.",
+        "prevention": "Plant only certified disease-free seed tubers. Eliminate all cull piles before spring planting.",
+        "organic_treatment": "Preventive copper sprays; prompt destruction of infected foliage.",
+        "chemical_treatment": "Fluopicolide, Cymoxanil, Propamocarb, or Metalaxyl according to local resistance data.",
+        "recommended_supplements": "Systemic potassium phosphonates to stimulate phytoalexin defenses.",
+        "recommended_fertilizers": "High potassium, moderate nitrogen to maintain strong cell wall integrity.",
+        "active_ingredients": "Cymoxanil, Fluopicolide, Mancozeb, Copper Oxychloride",
+        "precautions": "Never harvest potatoes when vines are still green and infected.",
+        "do_and_dont": json.dumps({
+            "dos": ["Destroy cull piles before season starts", "Hilling soil high over tubers to protect from spores"],
+            "donts": ["Do not store tubers showing any late blight symptoms"]
+        }),
+        "image_url": "/images/diseases/potato_early_blight.jpg",
+        "references": "International Potato Center (CIP) Compendium.",
+        "product_ids": ["prod-cymoxanil-mancozeb", "prod-copper-fungicide-50", "prod-potassium-phosphite"]
+    },
+    {
+        "id": "Potato___healthy",
+        "disease_name": "Healthy Potato Plant",
+        "scientific_name": "Solanum tuberosum",
+        "crop_id": "potato",
+        "category": "Healthy",
+        "severity": "None",
+        "is_healthy": True,
+        "description": "Vigorous potato haulm with crisp compound leaves, strong stolon growth, and healthy vegetative canopy.",
+        "symptoms": json.dumps([
+            "Uniform dark green foliage without spots or necrosis",
+            "Even canopy closure across garden beds or field rows",
+            "Clean flowering and healthy tuber initiation underground"
+        ]),
+        "causes": "Certified disease-free seed stock, balanced soil nutrition, and clean growing practices.",
+        "transmission": "N/A - Plant is healthy.",
+        "environmental_conditions": "Cool temperate conditions (16°C-22°C), loose well-aerated sandy loam soil.",
+        "treatment": "No treatment required. Maintain hill cultivation and steady irrigation.",
+        "prevention": "Ensure hills are maintained at least 15-20 cm high to protect expanding tubers from greening and spores.",
+        "organic_treatment": "Apply preventive compost tea or seaweed extracts for root vigor.",
+        "chemical_treatment": "None needed.",
+        "recommended_supplements": "Potassium Sulfate and Micronutrient chelate (Zinc, Manganese).",
+        "recommended_fertilizers": "High potassium potato fertilizer (e.g. 5-10-15 or 8-16-24).",
+        "active_ingredients": "Humic acids, Potassium, Trace minerals",
+        "precautions": "Avoid soil drying cycles during the tuber enlargement stage.",
+        "do_and_dont": json.dumps({
+            "dos": ["Hill soil adequately around stems", "Monitor moisture during tuber set"],
+            "donts": ["Do not expose growing tubers to sunlight (prevents solanine buildup)"]
+        }),
+        "image_url": "/images/diseases/potato_early_blight.jpg",
+        "references": "Agronomic Guide to Commercial Potato Production.",
+        "product_ids": ["prod-potassium-sulfate-soluble", "prod-organic-compost-tea"]
+    },
+    {
+        "id": "Corn_(maize)___Common_rust_",
+        "disease_name": "Corn Common Rust",
+        "scientific_name": "Puccinia sorghi",
+        "crop_id": "corn",
+        "category": "Fungal",
+        "severity": "Moderate",
+        "is_healthy": False,
+        "description": "Fungal disease characterized by golden-brown to cinnamon-brown pustules on both upper and lower corn leaf surfaces.",
+        "symptoms": json.dumps([
+            "Oval to elongate cinnamon-brown powdery pustules (uredinia) on leaf blades",
+            "Pustules erupting through the leaf epidermis releasing dusty spores",
+            "Chlorosis and premature browning of leaves when pustule density is heavy"
+        ]),
+        "causes": "Puccinia sorghi fungus whose spores blow northward each spring from warmer southern regions.",
+        "transmission": "Long-distance wind dispersal of urediniospores.",
+        "environmental_conditions": "Cool to moderate temperatures (16°C-25°C) combined with high relative humidity and overnight dew.",
+        "treatment": "Foliar fungicide applications if rust appears before silking on susceptible inbred lines or sweet corn.",
+        "prevention": "Plant corn hybrids with high genetic rust tolerance (Rp gene resistance).",
+        "organic_treatment": "Sulfur-based dusts or biofungicides (Bacillus subtilis) on sweet corn patches.",
+        "chemical_treatment": "Pyraclostrobin, Azoxystrobin + Propiconazole, or Tebuconazole.",
+        "recommended_supplements": "Zinc and Sulfur foliar nutrition to maintain chlorophyll synthesis.",
+        "recommended_fertilizers": "Balanced field crop fertility based on routine soil tests.",
+        "active_ingredients": "Pyraclostrobin, Propiconazole, Tebuconazole, Sulfur",
+        "precautions": "Follow pre-harvest intervals (PHI) when applying fungicides to sweet corn.",
+        "do_and_dont": json.dumps({
+            "dos": ["Select rust-resistant hybrids", "Scout lower leaves before tassel emergence"],
+            "donts": ["Do not apply late-season fungicides when grain fill is already complete"]
+        }),
+        "image_url": "/images/diseases/corn_common_rust.jpg",
+        "references": "Purdue Extension Corn Disease Management.",
+        "product_ids": ["prod-azoxystrobin-difenoconazole", "prod-micronutrient-zinc-chelate"]
+    },
+    {
+        "id": "Corn_(maize)___Northern_Leaf_Blight",
+        "disease_name": "Corn Northern Leaf Blight",
+        "scientific_name": "Exserohilum turcicum",
+        "crop_id": "corn",
+        "category": "Fungal",
+        "severity": "High",
+        "is_healthy": False,
+        "description": "Distinguished by large, cigar-shaped grayish-green lesions that turn tan, causing widespread defoliation in maize.",
+        "symptoms": json.dumps([
+            "Long, elliptical, cigar-shaped lesions (2.5 to 15 cm long)",
+            "Initially grayish-green, drying to tan or brown",
+            "Dark sporulation within lesions during damp mornings"
+        ]),
+        "causes": "Exserohilum turcicum fungus surviving in corn residue from prior seasons.",
+        "transmission": "Windborne and rain-splashed conidia.",
+        "environmental_conditions": "Moderate temperatures (18°C-27°C) and prolonged periods of leaf wetness (6-18 hours).",
+        "treatment": "Apply strobilurin and triazole combination fungicides if disease is noted on ear leaves around silking.",
+        "prevention": "Crop rotation with soybeans, tillage to bury corn residue, and selecting hybrids with Ht resistance genes.",
+        "organic_treatment": "Copper sprays and residue management with bio-decomposer inoculants.",
+        "chemical_treatment": "Azoxystrobin + Difenoconazole or Pyraclostrobin.",
+        "recommended_supplements": "Foliar boron and potassium to support ear development under stress.",
+        "recommended_fertilizers": "Balanced NPK; avoid excessive post-emergence nitrogen.",
+        "active_ingredients": "Azoxystrobin, Difenoconazole, Pyraclostrobin",
+        "precautions": "Rotate fungicide modes of action (FRAC codes) to avoid pathogen resistance.",
+        "do_and_dont": json.dumps({
+            "dos": ["Plant resistant corn hybrids", "Rotate fields out of corn for 1-2 seasons"],
+            "donts": ["Do not practice continuous no-till corn in fields with high blight history"]
+        }),
+        "image_url": "/images/diseases/corn_common_rust.jpg",
+        "references": "Iowa State Field Crop Pathology Compendium.",
+        "product_ids": ["prod-azoxystrobin-difenoconazole", "prod-balanced-npk-101010"]
+    },
+    {
+        "id": "Apple___Apple_scab",
+        "disease_name": "Apple Scab",
+        "scientific_name": "Venturia inaequalis",
+        "crop_id": "apple",
+        "category": "Fungal",
+        "severity": "Moderate",
+        "is_healthy": False,
+        "description": "Most widespread fungal disease of apple orchards, forming olive-brown velvety spots on leaves and corky blemishes on fruit.",
+        "symptoms": json.dumps([
+            "Dull olive-green to black velvety spots with feathered borders on leaf surfaces",
+            "Leaves turn yellow, puckered, and drop prematurely in mid-summer",
+            "Brown corky scab lesions on apple fruit causing cracking and distortion"
+        ]),
+        "causes": "Venturia inaequalis ascospores released from fallen overwintered apple leaves in spring.",
+        "transmission": "Wind and rain splash during spring bud break.",
+        "environmental_conditions": "Spring wet periods: cool temperatures (12°C-22°C) requiring 6-12 hours continuous leaf wetness (Mills Period).",
+        "treatment": "Fungicide spray program initiating at green tip stage and continuing through petal fall.",
+        "prevention": "Flail mow or shred fallen leaves in autumn; apply 5% urea spray to speed leaf decomposition.",
+        "organic_treatment": "Lime sulfur or liquid copper applied before bud break; sulfur sprays during active growth.",
+        "chemical_treatment": "Captan, Myclobutanil, or Difenoconazole applied according to Mills infection periods.",
+        "recommended_supplements": "Soluble Calcium sprays during fruit development to strengthen cell walls.",
+        "recommended_fertilizers": "Avoid excessive spring nitrogen which triggers overly lush vegetative growth susceptible to scab.",
+        "active_ingredients": "Captan, Myclobutanil, Sulfur, Copper Hydroxide",
+        "precautions": "Do not apply sulfur within 14 days of an oil application to avoid severe phytotoxicity.",
+        "do_and_dont": json.dumps({
+            "dos": ["Prune tree canopies for maximum sunlight and wind penetration", "Shred fallen autumn leaves"],
+            "donts": ["Do not miss sprays during spring rain events when green leaves are emerging"]
+        }),
+        "image_url": "/images/diseases/apple_scab.jpg",
+        "references": "Penn State Tree Fruit Production Guide.",
+        "product_ids": ["prod-captan-50wp", "prod-copper-fungicide-50", "prod-calcium-nitrate-foliar"]
+    },
+    {
+        "id": "Grape___Black_rot",
+        "disease_name": "Grape Black Rot",
+        "scientific_name": "Guignardia bidwellii",
+        "crop_id": "grape",
+        "category": "Fungal",
+        "severity": "High",
+        "is_healthy": False,
+        "description": "Destructive fungal disease of grapevines turning developing berries into hard, shriveled black mummies.",
+        "symptoms": json.dumps([
+            "Small reddish-brown circular spots on leaves surrounded by dark margins",
+            "Tiny black pimple-like fruiting bodies (pycnidia) arranged inside leaf spots",
+            "Infected berries turn soft, brown, and rapidly shrivel into hard black mummies covered in pycnidia"
+        ]),
+        "causes": "Guignardia bidwellii fungus overwintering on mummified berries and cane lesions.",
+        "transmission": "Rain splash and windblown ascospores in early spring.",
+        "environmental_conditions": "Warm and wet weather (21°C-29°C) with continuous free moisture on vines.",
+        "treatment": "Apply protectant fungicides from early shoot growth through 4-5 weeks post-bloom.",
+        "prevention": "Prune out and discard mummified berry clusters during winter dormancy. Trellis vines to maximize airflow.",
+        "organic_treatment": "Copper octanoate or sulfur applied early in the spring season.",
+        "chemical_treatment": "Mancozeb, Captan, or Myclobutanil.",
+        "recommended_supplements": "Potassium foliar feed to improve berry skin resilience.",
+        "recommended_fertilizers": "Balanced vineyard fertilizer; avoid excessive nitrogen.",
+        "active_ingredients": "Myclobutanil, Mancozeb, Captan",
+        "precautions": "Thoroughly remove all dried mummies from the trellises before spring budburst.",
+        "do_and_dont": json.dumps({
+            "dos": ["Drop and destroy all mummified grapes during winter pruning", "Keep vineyard canopy open"],
+            "donts": ["Do not let vine shoots trail on the damp ground"]
+        }),
+        "image_url": "/images/diseases/grape_black_rot.jpg",
+        "references": "Cornell Viticulture Extension.",
+        "product_ids": ["prod-mancozeb-75wp", "prod-captan-50wp", "prod-potassium-phosphite"]
+    },
+    {
+        "id": "Grape___Esca_(Black_Measles)",
+        "disease_name": "Grape Esca (Black Measles)",
+        "scientific_name": "Phaeomoniella chlamydospora, Phaeoacremonium minimum",
+        "crop_id": "grape",
+        "category": "Fungal Trunk Disease Complex",
+        "severity": "Severe",
+        "is_healthy": False,
+        "description": "Esca (Black Measles) is a destructive fungal grapevine trunk disease. It produces characteristic 'tiger-stripe' interveinal chlorosis and necrosis on foliage, dark speckling on berries, and vascular xylem decay, often leading to acute vine apoplexy under summer heat.",
+        "symptoms": json.dumps([
+            "Striking 'tiger-stripe' yellow and reddish necrotic bands between green leaf veins",
+            "Interveinal tissue dries out completely and turns brittle brown",
+            "Small dark purplish-black spots ('measles') on the skin of maturing grapes",
+            "Cracking, shriveling, or bitter flavor in affected berry clusters",
+            "Dark brown or black wood discoloration and internal white rot in the vine trunk",
+            "Sudden vine wilting and canopy collapse during high summer temperatures"
+        ]),
+        "causes": "Vascular wood-decay fungi (Phaeomoniella chlamydospora, Phaeoacremonium minimum, and basidiomycetes) colonizing vines through pruning wounds.",
+        "transmission": "Airborne and rain-splashed fungal spores penetrating unsealed pruning cuts during winter/spring dormancy.",
+        "environmental_conditions": "High summer heat (>30°C / 86°F) and strong evaporative demand triggering vascular water stress.",
+        "treatment": "Remove and incinerate infected cordons or dead wood. Treat all fresh pruning wounds immediately with protective sealants or Trichoderma biological pastes. Re-train a clean basal sucker.",
+        "prevention": "Prune late in winter when wound susceptibility is lowest. Never prune in rainy or high-humidity weather. Disinfect pruning shears between vines with 70% alcohol.",
+        "organic_treatment": "Trichoderma atroviride biological pruning wound protectant applied within 24 hours of cutting; sulfur dust on vines.",
+        "chemical_treatment": "Protective wound pastes containing Thiophanate-methyl, Pyraclostrobin, or flusilazole applied directly to cut surfaces.",
+        "recommended_supplements": "Seaweed kelp extracts and potassium humate to alleviate vine heat stress and strengthen vascular recovery.",
+        "recommended_fertilizers": "Balanced potassium fertilization to support berry skin osmotic resilience; avoid excessive nitrogen.",
+        "active_ingredients": "Trichoderma atroviride, Thiophanate-methyl, Copper Oxychloride, Pyraclostrobin",
+        "precautions": "Burn or deeply bury all pruned infected vine wood; never leave diseased cordons stacked near the vineyard.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Prune late in the dormant season when sap bleeding accelerates wound closure",
+                "Paint large pruning cuts (>2 cm) immediately with protective wound sealant",
+                "Sanitize pruning shears with alcohol between vines"
+            ],
+            "donts": [
+                "Do not prune during rainy or foggy weather when fungal spores are airborne",
+                "Do not leave pruned diseased wood on the vineyard floor",
+                "Do not over-fertilize with nitrogen which increases foliage water demand"
+            ]
+        }),
+        "image_url": "/images/diseases/grape_black_rot.jpg",
+        "references": "UC Davis IPM Grapevine Trunk Diseases; Plant Pathology Compendium.",
+        "product_ids": ["prod-copper-fungicide-50", "prod-bacillus-biofungicide", "prod-potassium-phosphite"]
+    },
+    {
+        "id": "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+        "disease_name": "Grape Leaf Blight (Isariopsis Spot)",
+        "scientific_name": "Pseudocercospora cladosporioides",
+        "crop_id": "grape",
+        "category": "Fungal",
+        "severity": "Moderate",
+        "is_healthy": False,
+        "description": "Late-season foliar fungal disease causing defined brown spots on grape leaves, leading to premature defoliation and delayed sugar accumulation in ripening grapes.",
+        "symptoms": json.dumps([
+            "Irregular to circular dark brown necrotic spots on leaves (2-10 mm diameter)",
+            "Yellow halo surrounding brown lesions",
+            "Premature yellowing and dropping of lower canopy leaves",
+            "Impaired berry ripening and decreased brix sugar levels due to canopy loss"
+        ]),
+        "causes": "Pseudocercospora cladosporioides overwintering on fallen infected grape leaves.",
+        "transmission": "Rain splash and wind currents spreading fungal conidia within the vineyard canopy.",
+        "environmental_conditions": "Warm, humid conditions with persistent morning dew in late summer and early autumn.",
+        "treatment": "Apply protective copper or mancozeb sprays post-bloom. Shred fallen leaves in autumn.",
+        "prevention": "Ensure good trellis shoot positioning to promote rapid canopy drying after rain. Avoid overhead sprinkler irrigation.",
+        "organic_treatment": "Fixed copper fungicides or potassium bicarbonate sprays applied every 10-14 days.",
+        "chemical_treatment": "Mancozeb, Difenoconazole, or Azoxystrobin applied according to label pre-harvest intervals.",
+        "recommended_supplements": "Potassium sulfate foliar spray during veraison to assist berry sweetening.",
+        "recommended_fertilizers": "Standard balanced vineyard fertilizer; avoid excessive late-season nitrogen.",
+        "active_ingredients": "Copper Hydroxide, Mancozeb, Difenoconazole",
+        "precautions": "Adhere strictly to pre-harvest intervals (PHI) to prevent residue on wine or table grapes.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Open up vine canopy with shoot positioning and selective leaf pulling around fruit zones",
+                "Mow or disk fallen leaves into the soil after harvest"
+            ],
+            "donts": [
+                "Do not allow vine canopies to become dense and shaded",
+                "Do not apply systemic fungicides close to harvest"
+            ]
+        }),
+        "image_url": "/images/diseases/grape_black_rot.jpg",
+        "references": "Viticulture and Enology Extension Publications.",
+        "product_ids": ["prod-copper-fungicide-50", "prod-mancozeb-75wp"]
+    },
+    {
+        "id": "Grape___healthy",
+        "disease_name": "Healthy Grapevine",
+        "scientific_name": "Vitis vinifera",
+        "crop_id": "grape",
+        "category": "Healthy",
+        "severity": "None",
+        "is_healthy": True,
+        "description": "Vigorous, well-trellised grapevine exhibiting lush, uniformly green lobed leaves, strong cane lignification, and clean developing berry clusters.",
+        "symptoms": json.dumps([
+            "Uniform vibrant green foliage free from interveinal chlorosis, spots, or scorching",
+            "Even shoot growth and balanced canopy density",
+            "Clean, glossy berry clusters without mummies, rot, or measles",
+            "Strong lignified cane development entering autumn dormancy"
+        ]),
+        "causes": "Balanced nutrition, optimal sun exposure, clean trellis aeration, and vigilant vineyard management.",
+        "transmission": "N/A - Vine is in excellent health.",
+        "environmental_conditions": "Full sunlight (6-8+ hours), well-drained gravelly or loamy soil, moderate irrigation.",
+        "treatment": "No disease treatments required. Maintain preventive cultural practices and canopy canopy management.",
+        "prevention": "Continue canopy hedging, shoot tucking, and preventive sulfur/copper sprays during high-risk spring humidity windows.",
+        "organic_treatment": "Compost tea foliar drench and mycorrhizal root inoculants to maintain soil microbiome health.",
+        "chemical_treatment": "None needed.",
+        "recommended_supplements": "Micronutrient foliar spray (Zinc, Boron, Magnesium) to ensure uniform berry set.",
+        "recommended_fertilizers": "Balanced organic compost, potassium sulfate (0-0-50), and moderate nitrogen.",
+        "active_ingredients": "Beneficial microbes, Potassium, Boron, Zinc",
+        "precautions": "Avoid over-irrigation before harvest to protect berry sugar concentration.",
+        "do_and_dont": json.dumps({
+            "dos": [
+                "Maintain good canopy management and airflow through fruit zone",
+                "Apply clean mulch under vine rows to suppress weed competition"
+            ],
+            "donts": [
+                "Do not apply unnecessary pesticides when foliage and clusters are clean",
+                "Do not allow weeds to touch vine canopies"
+            ]
+        }),
+        "image_url": "/images/diseases/grape_black_rot.jpg",
+        "references": "Vineyard Best Management Practice Guidelines.",
+        "product_ids": ["prod-organic-compost-tea", "prod-potassium-phosphite"]
+    },
+    {
+        "id": "Pepper,_bell___Bacterial_spot",
+        "disease_name": "Bell Pepper Bacterial Spot",
+        "scientific_name": "Xanthomonas euvesicatoria",
+        "crop_id": "pepper",
+        "category": "Bacterial",
+        "severity": "Moderate",
+        "is_healthy": False,
+        "description": "Bacterial infection causing small, dark, water-soaked leaf spots, defoliation, and rough raised scabs on pepper fruits.",
+        "symptoms": json.dumps([
+            "Small water-soaked circular to irregular lesions on leaves",
+            "Spots become necrotic with dark brown centers and yellow halos",
+            "Substantial defoliation under high humidity",
+            "Raised, blister-like or scabby spots on fruit surface"
+        ]),
+        "causes": "Bacterial pathogen seedborne or surviving on crop debris and weed hosts.",
+        "transmission": "Spreads readily through splashing rain, wind-driven storms, and overhead watering.",
+        "environmental_conditions": "Warm, humid conditions (24°C-30°C) with frequent rain or dew.",
+        "treatment": "Spray fixed copper mixed with Mancozeb (improves copper bactericidal solubility).",
+        "prevention": "Use certified pathogen-free seeds. Choose bacterial spot-resistant bell pepper varieties.",
+        "organic_treatment": "Liquid copper bactericides, Bacillus amyloliquefaciens foliar treatments.",
+        "chemical_treatment": "Copper Hydroxide combined with Mancozeb or systemic acquired resistance (SAR) inducers like Acibenzolar-S-methyl.",
+        "recommended_supplements": "Calcium and Boron sprays to reduce blossom dropping and improve skin toughness.",
+        "recommended_fertilizers": "Balanced NPK. Avoid excessive nitrogen to prevent soft tender tissue.",
+        "active_ingredients": "Copper Hydroxide, Mancozeb, Acibenzolar-S-methyl",
+        "precautions": "Never work in or cultivate pepper beds when foliage is wet with dew or rain.",
+        "do_and_dont": json.dumps({
+            "dos": ["Sanitize seeds with hot water treatment", "Use drip irrigation"],
+            "donts": ["Do not cultivate or prune pepper plants when leaves are wet"]
+        }),
+        "image_url": "/images/diseases/bell_pepper_bacterial_spot.jpg",
+        "references": "University of Georgia Extension Pepper Pathology.",
+        "product_ids": ["prod-copper-fungicide-50", "prod-mancozeb-75wp", "prod-bacillus-biofungicide"]
+    }
+]
+
+PRODUCTS_SEED_DATA = [
+    {
+        "id": "prod-copper-fungicide-50",
+        "product_name": "CopperShield 50 WP (Copper Oxychloride)",
+        "category": "Fungicide & Bactericide",
+        "crop": "Tomato, Potato, Pepper, Apple, Grape",
+        "purpose": "Broad-spectrum preventative control against fungal blights, anthracnose, and bacterial spots.",
+        "description": "Commercial wettable powder containing 50% metallic copper equivalent. Forms a durable protective shield on leaf cuticles to prevent spore germination.",
+        "active_ingredient": "Copper Oxychloride 50% WP",
+        "usage_information": "Mix 2.5 to 3 grams per liter of water. Spray thoroughly over foliage every 7-10 days under disease-favorable weather.",
+        "precaution": "Do not apply during intense midday heat. Avoid inhaling dust during tank mixing; wear protective gloves and respirator mask.",
+        "organic_or_chemical": "Organic / OMRI-Listed Equivalent",
+        "manufacturer": "AgroShield Technologies",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/coppershield-50"
+    },
+    {
+        "id": "prod-bacillus-biofungicide",
+        "product_name": "Serenade ASO Biofungicide",
+        "category": "Bio-fungicide",
+        "crop": "All Crops",
+        "purpose": "Biological defense against fungal and bacterial leaf diseases through competitive exclusion and lipopeptide synthesis.",
+        "description": "Contains beneficial bacterial spores of Bacillus amyloliquefaciens strain QST 713. Colonizes leaf surfaces and destroys germ tubes of pathogenic fungi.",
+        "active_ingredient": "Bacillus amyloliquefaciens strain QST 713 (1.34% min 1x10^9 CFU/g)",
+        "usage_information": "Dilute 5-10 ml per liter of clean water. Apply early morning or evening for optimal microbial survival.",
+        "precaution": "Do not tank-mix directly with strong bactericides or concentrated copper formulations.",
+        "organic_or_chemical": "Organic",
+        "manufacturer": "Bayer CropScience Bio",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/serenade-bio"
+    },
+    {
+        "id": "prod-mancozeb-75wp",
+        "product_name": "Dithane M-45 Mancozeb 75% WP",
+        "category": "Fungicide",
+        "crop": "Tomato, Potato, Corn, Grape, Apple",
+        "purpose": "Multi-site contact protectant fungicide controlling early blight, late blight, rust, and leaf spots.",
+        "description": "Industry-standard dithiocarbamate contact fungicide providing broad multisite enzymatic disruption in target fungi, making resistance very rare.",
+        "active_ingredient": "Mancozeb 75% WP (Manganese + Zinc ethylene bisdithiocarbamate)",
+        "usage_information": "Mix 2 to 2.5 grams per liter of water. Apply at 7-day intervals as a protective barrier before rain events.",
+        "precaution": "Respect the 7 to 14 day pre-harvest interval (PHI). Toxic to aquatic organisms. Use proper protective overalls.",
+        "organic_or_chemical": "Chemical",
+        "manufacturer": "Dow AgroSciences / Corteva",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/dithane-m45"
+    },
+    {
+        "id": "prod-cymoxanil-mancozeb",
+        "product_name": "Curzate M8 (Cymoxanil + Mancozeb)",
+        "category": "Curative / Systemic Fungicide",
+        "crop": "Tomato, Potato",
+        "purpose": "Curative kickback and protective control against aggressive Late Blight (Phytophthora infestans).",
+        "description": "Combines penetrating systemic action of Cymoxanil with broad-spectrum protective residual of Mancozeb to halt early stage late blight infections.",
+        "active_ingredient": "Cymoxanil 8% + Mancozeb 64% WP",
+        "usage_information": "Mix 2.5 grams per liter of water upon first notification of late blight in the district.",
+        "precaution": "Do not apply more than 4 times per crop cycle to prevent fungicide resistance.",
+        "organic_or_chemical": "Chemical",
+        "manufacturer": "DuPont / Corteva",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/curzate-m8"
+    },
+    {
+        "id": "prod-chlorothalonil-720",
+        "product_name": "Bravo Weather Stik Chlorothalonil 720 SC",
+        "category": "Fungicide",
+        "crop": "Tomato, Potato, Corn, Pepper",
+        "purpose": "Rainfast contact preventative foliar fungicide against early blight, mold, and anthracnose.",
+        "description": "Liquid formulation engineered with weather-stik surfactant technology that resists washoff during heavy rainfall.",
+        "active_ingredient": "Chlorothalonil 54% (720 g/L)",
+        "usage_information": "Apply 2 ml per liter of water as canopy begins to close. Repeat every 7-14 days.",
+        "precaution": "Strict eye irritant. Do not apply when honeybees are actively foraging blooming crops.",
+        "organic_or_chemical": "Chemical",
+        "manufacturer": "Syngenta",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/bravo-weatherstik"
+    },
+    {
+        "id": "prod-potassium-phosphite",
+        "product_name": "Phosgard Systemic Phosphite 0-0-28",
+        "category": "Systemic Induced Resistance / Plant Defense",
+        "crop": "All Crops",
+        "purpose": "Induces systemic acquired resistance (SAR) against downy mildews, late blight, and root rots.",
+        "description": "Contains mono- and di-potassium salts of phosphorous acid. Translocates upward and downward through xylem and phloem, stimulating defensive phytoalexins.",
+        "active_ingredient": "Mono- and Di-potassium phosphite (28% Soluble Potash)",
+        "usage_information": "Dilute 3-5 ml per liter of water as a foliar spray or drip fertigation.",
+        "precaution": "Do not mix with copper fungicides or mineral oils within 10 days of application.",
+        "organic_or_chemical": "Chemical / Plant Health Booster",
+        "manufacturer": "JH Biotech",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/phosgard-phosphite"
+    },
+    {
+        "id": "prod-neem-oil-organic",
+        "product_name": "PureCold NeemShield Pure Cold-Pressed Neem Oil",
+        "category": "Organic Insecticide & Fungicide",
+        "crop": "All Crops",
+        "purpose": "Controls aphids, whiteflies, spider mites, and suppresses powdery mildew and leaf spots.",
+        "description": "100% cold-pressed clarified hydrophobic neem extract enriched with natural azadirachtin. Disrupts insect hormonal systems and deters fungal attachment.",
+        "active_ingredient": "Cold-Pressed Neem Oil (Azadirachtin 0.3%)",
+        "usage_information": "Mix 5 ml Neem Oil with 2 ml mild liquid soap (emulsifier) in 1 liter of lukewarm water. Spray thoroughly under leaves.",
+        "precaution": "Spray only in late evening or early morning. Never spray in direct hot sun above 30°C to avoid leaf burn.",
+        "organic_or_chemical": "Organic",
+        "manufacturer": "GreenEarth Organics",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/neemshield-organic"
+    },
+    {
+        "id": "prod-calcium-nitrate-foliar",
+        "product_name": "YaraLiva Calcinit Soluble Calcium Nitrate",
+        "category": "Micronutrient / Supplement",
+        "crop": "Tomato, Pepper, Apple, Potato",
+        "purpose": "Prevents blossom end rot, strengthens cellular pectins against fungal penetration, and cures calcium deficiency.",
+        "description": "100% water-soluble greenhouse-grade fertilizer providing fast-acting nitrate nitrogen (15.5%) and water-soluble calcium (19% Ca).",
+        "active_ingredient": "Nitrogen (N) 15.5%, Calcium (Ca) 19%",
+        "usage_information": "Dissolve 3-5 grams per liter of water for foliar application, or 1-2 kg per 1000 square meters through drip irrigation.",
+        "precaution": "Do not mix with sulfate- or phosphate-based fertilizers in concentrated stock tanks to avoid precipitate.",
+        "organic_or_chemical": "Chemical / Mineral Nutrient",
+        "manufacturer": "Yara International",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/yaraliva-calcinit"
+    },
+    {
+        "id": "prod-balanced-npk-101010",
+        "product_name": "AgroGrow Balanced NPK 10-10-10 + TE",
+        "category": "Fertilizer",
+        "crop": "All Crops",
+        "purpose": "Promotes balanced root, shoot, and fruit development with chelated trace elements.",
+        "description": "Completely soluble crystalline fertilizer with equal proportions of nitrogen, phosphorus, and potassium, fortified with Zinc, Boron, and Iron.",
+        "active_ingredient": "Total Nitrogen 10%, Available Phosphate 10%, Soluble Potash 10%, Trace Elements 0.5%",
+        "usage_information": "Apply 3-4 grams per liter of irrigation water once every 14 days during active growth.",
+        "precaution": "Store in dry moisture-proof containers to avoid clumping.",
+        "organic_or_chemical": "Chemical / Soluble Fertilizer",
+        "manufacturer": "AgroGrow Nutrients",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/agrogrow-npk101010"
+    },
+    {
+        "id": "prod-azoxystrobin-difenoconazole",
+        "product_name": "Amistar Top (Azoxystrobin + Difenoconazole)",
+        "category": "Broad-Spectrum Systemic Fungicide",
+        "crop": "Corn, Tomato, Pepper, Rice",
+        "purpose": "Superior curative and preventative control of rusts, leaf blights, powdery mildew, and anthracnose.",
+        "description": "Dual-action chemistry combining strobilurin (FRAC 11) for spore inhibition and triazole (FRAC 3) for curative ergosterol biosynthesis inhibition.",
+        "active_ingredient": "Azoxystrobin 18.2% + Difenoconazole 11.4% SC",
+        "usage_information": "Apply 1 ml per liter of water at first symptom onset or high humidity warnings.",
+        "precaution": "Do not apply on apple trees as azoxystrobin is severely phytotoxic to certain apple cultivars.",
+        "organic_or_chemical": "Chemical",
+        "manufacturer": "Syngenta",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/amistar-top"
+    },
+    {
+        "id": "prod-captan-50wp",
+        "product_name": "Captan 50% WP Agricultural Fungicide",
+        "category": "Fungicide",
+        "crop": "Apple, Grape, Peach, Cherry, Strawberry",
+        "purpose": "Control of apple scab, black rot, gray mold, and leaf scorch in fruit orchards.",
+        "description": "Versatile multi-site phthalimide protective fungicide widely used in commercial orchard management for over 50 years.",
+        "active_ingredient": "Captan 50% Wettable Powder",
+        "usage_information": "Mix 2 to 3 grams per liter of water. Apply at tight cluster stage through harvest in accordance with PHI.",
+        "precaution": "Do not apply in combination with or immediately before/after summer spray oils.",
+        "organic_or_chemical": "Chemical",
+        "manufacturer": "ADAMA Agricultural Solutions",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/captan-50wp"
+    },
+    {
+        "id": "prod-organic-compost-tea",
+        "product_name": "BioHumus Aerated Compost Tea Brew Kit",
+        "category": "Organic Soil & Plant Supplement",
+        "crop": "All Crops",
+        "purpose": "Restores beneficial foliar and rhizosphere microbiomes, enhancing natural disease resistance.",
+        "description": "Richly populated with beneficial aerobic bacteria, protozoa, and mycorrhizae brewed with humic acids and Norwegian kelp.",
+        "active_ingredient": "Live aerobic beneficial microbes, Humic & Fulvic acids",
+        "usage_information": "Apply 50 ml brewed tea diluted into 1 liter of unchlorinated water as a foliar drench or soil root bath.",
+        "precaution": "Use within 4 hours of aeration brew cycle to maintain high microbial viability.",
+        "organic_or_chemical": "Organic",
+        "manufacturer": "SoilBio Dynamics",
+        "image_url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=400&q=80",
+        "purchase_url": "https://example.com/products/biohumus-compost-tea"
+    }
+]
+
+
+def seed_database(db: Session = None):
+    """Seeds crops, diseases, and products into database if not already present."""
+    close_at_end = False
+    if db is None:
+        init_db()
+        db = SessionLocal()
+        close_at_end = True
+
+    try:
+        logger.info("Checking crops...")
+        for c in CROPS_SEED_DATA:
+            existing_crop = db.query(Crop).filter(Crop.id == c["id"]).first()
+            if not existing_crop:
+                db.add(Crop(**c))
+        db.commit()
+
+        logger.info("Checking products...")
+        product_map = {}
+        for p in PRODUCTS_SEED_DATA:
+            prod_obj = db.query(Product).filter(Product.id == p["id"]).first()
+            if not prod_obj:
+                prod_obj = Product(**p)
+                db.add(prod_obj)
+                db.flush()
+            product_map[p["id"]] = prod_obj
+        db.commit()
+
+        logger.info("Checking and seeding diseases...")
+        for d in DISEASES_SEED_DATA:
+            d_copy = dict(d)
+            p_ids = d_copy.pop("product_ids", [])
+            disease_obj = db.query(Disease).filter(Disease.id == d_copy["id"]).first()
+            if not disease_obj:
+                disease_obj = Disease(**d_copy)
+                for pid in p_ids:
+                    if pid in product_map and product_map[pid] not in disease_obj.recommended_products:
+                        disease_obj.recommended_products.append(product_map[pid])
+                db.add(disease_obj)
+            else:
+                for pid in p_ids:
+                    if pid in product_map and product_map[pid] not in disease_obj.recommended_products:
+                        disease_obj.recommended_products.append(product_map[pid])
+        db.commit()
+
+        logger.info("Database seeding successfully verified and updated!")
+
+    except Exception as e:
+        logger.error(f"Error seeding database: {e}")
+        db.rollback()
+    finally:
+        if close_at_end:
+            db.close()
+
+
+if __name__ == "__main__":
+    seed_database()

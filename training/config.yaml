@@ -1,0 +1,37 @@
+# PlantCare AI - Deep Learning Model Training Configuration
+# Compatible with PyTorch and Torchvision
+
+dataset:
+  data_dir: "./data/plantvillage"
+  image_size: 224
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  num_workers: 4
+  batch_size: 32
+
+model:
+  # Supported architectures: mobilenet_v3_large, resnet50, efficientnet_b0
+  architecture: "mobilenet_v3_large"
+  pretrained: true
+  num_classes: 38
+  dropout: 0.2
+
+training:
+  epochs: 25
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  optimizer: "adamw" # adamw, sgd
+  scheduler: "cosine" # cosine, step
+  patience: 5 # Early stopping patience
+  checkpoint_dir: "./checkpoints"
+  output_model_path: "../backend/models/disease_model.pt"
+
+augmentation:
+  random_horizontal_flip: true
+  random_vertical_flip: true
+  random_rotation_degrees: 30
+  color_jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2

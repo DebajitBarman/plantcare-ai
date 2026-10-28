@@ -1,0 +1,128 @@
+{
+  "nav": {
+    "brand": "PlantCare AI",
+    "home": "Home",
+    "detect": "Disease Detection",
+    "library": "Disease Library",
+    "treatments": "Treatments & Supplements",
+    "history": "Scan History",
+    "dashboard": "Dashboard",
+    "about": "About",
+    "contact": "Advisory & Help"
+  },
+  "hero": {
+    "tag": "AI Agricultural Diagnostic Assistant",
+    "title": "Detect Plant Diseases with AI Precision",
+    "subtitle": "Upload a leaf photograph and receive an instant deep-learning diagnosis, symptom analysis, scientific treatments, and agronomic product recommendations.",
+    "ctaDetect": "Detect Disease Now",
+    "ctaExplore": "Explore Disease Library"
+  },
+  "stats": {
+    "accuracy": "High Diagnostic Accuracy",
+    "crops": "14+ Supported Crops",
+    "diseases": "38+ Disease Classes",
+    "farmers": "Zero Guesswork"
+  },
+  "detection": {
+    "title": "Plant Health Analysis",
+    "subtitle": "Upload or capture a close-up photo of an affected plant leaf.",
+    "selectCrop": "Select Crop / Plant",
+    "autoDetect": "Auto Detect Crop",
+    "location": "Farm Location / Region (Optional)",
+    "locationPlaceholder": "e.g., Punjab, India or California, USA",
+    "stage": "Growth Stage (Optional)",
+    "stageVegetative": "Vegetative",
+    "stageFlowering": "Flowering / Bloom",
+    "stageFruiting": "Fruiting / Ripening",
+    "stageMature": "Mature / Harvest",
+    "notes": "Field Observations / Notes (Optional)",
+    "notesPlaceholder": "e.g. Symptoms appeared after recent heavy rains...",
+    "dropzoneTitle": "Drag & drop leaf image here",
+    "dropzoneSubtitle": "or click to browse from device (JPG, PNG, WEBP up to 10MB)",
+    "changeImage": "Change Image",
+    "removeImage": "Remove",
+    "analyzeBtn": "Analyze Leaf Health",
+    "analyzing": "Analyzing with AI..."
+  },
+  "progress": {
+    "uploading": "Uploading image securely...",
+    "preprocessing": "Preprocessing & standardizing leaf tensor...",
+    "runningModel": "Running PyTorch neural network...",
+    "diagnosing": "Evaluating confidence and symptom features...",
+    "retrieving": "Consulting verified agronomic knowledge base..."
+  },
+  "report": {
+    "title": "Plant Health Diagnostic Report",
+    "cropDetected": "Detected Crop",
+    "diseaseDetected": "Detected Condition",
+    "confidence": "Diagnostic Confidence",
+    "severity": "Severity Level",
+    "scientificName": "Scientific Name",
+    "whyPrediction": "Why this prediction?",
+    "topPredictions": "Top Alternative Predictions",
+    "toggleHeatmap": "Show Disease Heatmap Overlay",
+    "hideHeatmap": "Hide Heatmap Overlay",
+    "demoNotice": "Notice: Operating in Demo / Simulation Mode until a custom trained .pt model is placed in backend/models/.",
+    "lowConfidenceWarning": "Low Confidence Alert: The model confidence is below optimum threshold. Please upload a sharper, better-lit close-up leaf image or consult a local agricultural extension officer.",
+    "tabs": {
+      "overview": "Overview & Symptoms",
+      "treatment": "Treatment & Care",
+      "supplements": "Supplements & Products",
+      "prevention": "Prevention & Cultural Care",
+      "doAndDont": "Do's and Don'ts",
+      "weather": "Weather & Environmental Risk"
+    },
+    "symptoms": "Observed Symptoms",
+    "causes": "Causes & Biology",
+    "transmission": "Pathogen Transmission",
+    "environmentalConditions": "Favorable Environmental Conditions",
+    "chemicalTreatment": "Targeted Chemical Treatment",
+    "organicTreatment": "Organic & Biological Alternatives",
+    "activeIngredients": "Key Active Ingredients",
+    "precautions": "Safety Precautions",
+    "whenToConsult": "When to Consult an Agronomist",
+    "printReport": "Print / Export PDF",
+    "newScan": "Analyze Another Leaf"
+  },
+  "library": {
+    "title": "Agronomic Disease Library",
+    "subtitle": "Explore verified scientific profiles for major crop diseases, fungal pathogens, and bacterial infections.",
+    "searchPlaceholder": "Search diseases by name, symptoms, or scientific pathogen...",
+    "filterCrop": "Filter by Crop",
+    "filterCategory": "Filter by Category",
+    "filterSeverity": "Filter by Severity",
+    "all": "All",
+    "viewDetails": "View Full Profile"
+  },
+  "products": {
+    "title": "Treatments & Agricultural Supplements",
+    "subtitle": "Browse verified commercial fungicides, bio-pesticides, organic remedies, and plant nutrition supplements.",
+    "searchPlaceholder": "Search products, active ingredients, or purpose...",
+    "allCategories": "All Categories",
+    "filterOrganic": "All Types",
+    "organicOnly": "Organic Only",
+    "chemicalOnly": "Chemical Only",
+    "activeIngredient": "Active Ingredient",
+    "purpose": "Primary Purpose",
+    "usage": "Usage Instructions",
+    "precaution": "Handling Precaution"
+  },
+  "history": {
+    "title": "Scan History",
+    "subtitle": "Review and track past leaf diagnostic records and health trends.",
+    "noHistory": "No scan records found. Perform a leaf analysis to populate history.",
+    "delete": "Delete Record",
+    "viewReport": "Open Report"
+  },
+  "dashboard": {
+    "title": "Farm Health Analytics Dashboard",
+    "subtitle": "Real-time diagnostic distribution, crop health metrics, and prevalent pathogen tracking.",
+    "totalScans": "Total Scans",
+    "diseasesDetected": "Infections Detected",
+    "healthyPlants": "Healthy Plants",
+    "topCrop": "Most Scanned Crop",
+    "diseaseDistribution": "Disease Distribution",
+    "cropBreakdown": "Crop Breakdown",
+    "recentActivity": "Recent Diagnoses"
+  }
+}
