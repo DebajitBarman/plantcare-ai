@@ -68,13 +68,15 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
+    "https://plantcare-ai-chi.vercel.app",
 ]
 
-# Add the deployed frontend URL through Render environment variables
+# Also allow an optional frontend URL configured on Render
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
-    ALLOWED_ORIGINS.append(frontend_url.rstrip("/"))
-
+    frontend_url = frontend_url.rstrip("/")
+    if frontend_url not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(frontend_url)
 
 app.add_middleware(
     CORSMiddleware,
